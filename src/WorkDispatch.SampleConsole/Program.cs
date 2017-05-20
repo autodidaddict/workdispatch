@@ -58,23 +58,27 @@ namespace WorkDispatch.SampleConsole
             var sub = redis.GetSubscriber();
             for (int i = start; i < finish + 1; i++)
             {
-                Thread.Sleep(50);
-                HashEntry[] update;
+                Thread.Sleep(10);
+                HashEntry[] updates;
+                HashEntry status;
                 string channel = "workitem-succeeded";
                 if (i % 5 == 0)
                 {
                     channel = "workitem-failed";
-                    update = new HashEntry[] {
-                        new HashEntry("status", "Failed")
-                    };
+                    status = new HashEntry("status", "Failed");
                 }
                 else
                 {
-                    update = new HashEntry[] {
-                        new HashEntry("status", "Completed")
-                    };
+                    status = new HashEntry("status", "Completed");
                 }
-                db.HashSet($"workitem:{i}", update);
+                var i1 = (string)db.HashGet($"workitem:{i}", "input1");
+                var i2 = (string)db.HashGet($"workitem:{i}", "input2");
+
+                updates = new HashEntry[] {
+                    status,
+                    new HashEntry("result", i1+ " " + i2)
+                };
+                db.HashSet($"workitem:{i}", updates);
                 sub.Publish(channel, $"{batchId}:{i}");
             }
         }
